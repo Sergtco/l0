@@ -1,0 +1,19 @@
+{
+    "main": "main.js",
+    "type": "module",
+    "dependencies": {
+        "latest": "^0.2.0",
+        "nats": "^2.25.0"
+    },
+    "name": "sender",
+    "version": "1.0.0",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "prettier": {
+        "tabWidth":4
+    },
+    "author": "",
+    "license": "ISC",
+    "description": ""
+}
