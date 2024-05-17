@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service</title>
+</head>
+
+<body>
+    <script>
+        function showResults() {
+            let uid = document.forms[0].querySelector('input[name="id"]').value;
+            let url = "/data/?uid=" + uid;
+
+            fetch(url, {
+                method: "GET",
+            })
+                .then((response) => {
+                    if (!response.ok) {
+                        if (response.status == 400) {
+                            throw new Error('No such id');
+                        } else {
+                            throw new Error("Internal server error")
+                        }
+                    }
+                    return response.json();
+                })
+                .then((data) => {
+                    document.getElementById("output").innerHTML = '<pre>' + JSON.stringify(data, null, 4) + '</pre>';
+                })
+                .catch((error) => {
+                    document.getElementById("output").innerHTML = 'Fetch error: ' + error.message;
+                });
+        }
+    </script>
+    <h1>Send request</h1>
+    <form>
+        <label for="id">UID: </label>
+        <input type="text" name="id" />
+        <input type="button" name="send" onclick="showResults()" value="send" />
+    </form>
+    <div id="output"></div>
+</body>
+
+</html>
