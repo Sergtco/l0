@@ -11,6 +11,7 @@ var (
 	NotExistError error = fmt.Errorf("No item exists.")
 )
 
+// Base cache with queue, uses mutex to prevent race condition/
 type Cache struct {
 	data     map[string]*models.Order
 	lastUsed []string
@@ -19,42 +20,39 @@ type Cache struct {
 	mu       sync.RWMutex
 }
 
+// Returns NotExistError if key is not valid
 func (c *Cache) Get(key string) (*models.Order, error) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	if val, ok := c.data[key]; ok {
 		return val, nil
 	} else if val, err := c.dataBase.GetOrder(key); err == nil {
-		go func() {
-			c.put(key, val)
-		}()
+		c.put(val)
 		return val, nil
 	}
 	return nil, NotExistError
 }
 
-func (c *Cache) put(key string, value *models.Order) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if c.maxSize >= len(c.lastUsed) && len(c.lastUsed) != 0 {
+func (c *Cache) put(value *models.Order) {
+	if c.maxSize <= len(c.lastUsed) && len(c.lastUsed) != 0 {
 		lastKey := c.lastUsed[0]
 		c.lastUsed = c.lastUsed[1:]
 		delete(c.data, lastKey)
 	}
-	if _, ok := c.data[key]; !ok {
-		c.data[key] = value
-		c.lastUsed = append(c.lastUsed, key)
+	if _, ok := c.data[value.Id]; !ok {
+		c.data[value.Id] = value
+		c.lastUsed = append(c.lastUsed, value.Id)
 	}
 }
 
-func (c *Cache) Store(key string, value *models.Order) error {
+func (c *Cache) Store(value *models.Order) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	err := c.dataBase.InsertOrder(value)
 	if err != nil {
 		return err
 	}
-	go func() {
-		c.put(key, value)
-	}()
+	c.put(value)
 	return nil
 }
 
@@ -67,8 +65,17 @@ func NewCache(maxSize int) *Cache {
 		mu:       sync.RWMutex{},
 	}
 	c.restoreData()
+	fmt.Println(len(c.data))
 	return c
 }
-func (c *Cache) restoreData() {
-	c.dataBase.GetTopOrders(c.maxSize)
+
+func (c *Cache) restoreData() error {
+	orders, err := c.dataBase.GetTopOrders(c.maxSize)
+	if err != nil {
+		return err
+	}
+	for _, order := range orders {
+		c.Store(order)
+	}
+	return nil
 }

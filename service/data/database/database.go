@@ -4,34 +4,47 @@ import (
 	"context"
 	"encoding/json"
 	"service/models"
+	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
+// wrapper around pgxpool
 type Database struct {
-	pool *pgxpool.Pool
+	pool Pool
+}
+type Pool interface {
+	Exec(ctx context.Context, sql string, args ...any) (pgconn.CommandTag, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
 }
 
+// On conflict of id's does nothing
 func (db *Database) InsertOrder(order *models.Order) error {
 	data, err := json.Marshal(order)
 	if err != nil {
 		return err
 	}
-	db.pool.Exec(context.Background(),
-		`insert into orders (id, data) 
-        values ($1, $2)
-        on confilct (id)
-        do nothing
+	_, err = db.pool.Exec(context.Background(),
+		`INSERT INTO orders (id, data, insert_time) 
+        VALUES ($1, $2, $3)
+        ON CONFLICT (id)
+        DO NOTHING
         `,
-		order.Id, data)
+		order.Id, data, time.Now().UnixMilli())
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
+// Returns models.Order on success, else error
 func (db *Database) GetOrder(uid string) (*models.Order, error) {
 	var data []byte
 	err := db.pool.QueryRow(context.Background(),
-		`select data from orders where id = $1`, uid).Scan(&data)
+		`SELECT data FROM orders WHERE id = $1`, uid).Scan(&data)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +58,9 @@ func (db *Database) GetOrder(uid string) (*models.Order, error) {
 
 func (db *Database) GetTopOrders(maxAmount int) ([]*models.Order, error) {
 	rows, err := db.pool.Query(context.Background(),
-		`select data from orders limit $1`, maxAmount)
+		`SELECT data FROM orders
+        ORDER BY insert_time DESC 
+        LIMIT $1`, maxAmount)
 	if err != nil {
 		return nil, err
 	}

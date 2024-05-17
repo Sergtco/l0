@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -14,8 +13,8 @@ func index(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	tmpl, err := template.ParseFiles("./api/views/index.html")
 	if err != nil {
-		log.Panicln(err)
-		serveError(w, http.StatusInternalServerError)
+		log.Println(err)
+		http.Error(w, "InternalServerError", http.StatusInternalServerError)
 		return
 	}
 	tmpl.Execute(w, "")
@@ -35,11 +34,6 @@ func getData(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	data, _ := json.MarshalIndent(order, "", "    ")
 	w.Write(data)
-}
-
-func serveError(w http.ResponseWriter, code int) {
-	w.WriteHeader(code)
-	w.Write([]byte(fmt.Sprintf("Something went wrong: %d", code)))
 }
 
 func RunServer() error {

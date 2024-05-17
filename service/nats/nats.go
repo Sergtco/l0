@@ -42,10 +42,11 @@ func StartListening(parentCtx context.Context) error {
 			return err
 		}
 		go func() {
-			err := data.Process(msg)
+			err := data.Process(&msg)
 			if err != nil {
-				log.Println(err)
+				log.Println("In nats: ", err)
 			}
+			log.Println("Successfuly parsed message ", msg)
 		}()
 	}
 }

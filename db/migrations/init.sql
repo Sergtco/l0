@@ -1,4 +1,5 @@
 create table orders (
     id text primary key,
-    data jsonb
+    data jsonb,
+    insert_time bigint
 );
