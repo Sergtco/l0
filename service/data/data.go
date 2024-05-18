@@ -6,13 +6,16 @@ import (
 	"service/data/cache"
 	"service/models"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/nats-io/nats.go/jetstream"
 )
 
 var Cache *cache.Cache
+var validate validator.Validate
 
 func init() {
 	Cache = cache.NewCache(1024)
+	validate = *validator.New(validator.WithRequiredStructEnabled())
 }
 
 // Processes message. Either accepts it or declines.
@@ -23,6 +26,11 @@ func Process(message *jetstream.Msg) error {
 	if err != nil {
 		return err
 	}
+	err = validate.Struct(order)
+	if err != nil {
+		return err
+	}
+
 	err = Cache.Store(order)
 	if err != nil {
 		return err

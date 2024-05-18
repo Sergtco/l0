@@ -10,7 +10,7 @@ type Order struct {
 	Locale            string   `json:"locale"`
 	InternalSignature string   `json:"internal_signature"`
 	CustomerId        string   `json:"customer_id"`
-	DelveryService    string   `json:"delvery_service"`
+	DelveryService    string   `json:"delivery_service"`
 	ShardKey          string   `json:"shardkey"`
 	SmId              int      `json:"sm_id"`
 	DateCreated       string   `json:"date_created"`

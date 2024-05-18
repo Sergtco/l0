@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"service/models"
 	"time"
 
@@ -81,7 +82,11 @@ func (db *Database) GetTopOrders(maxAmount int) ([]*models.Order, error) {
 }
 
 func New() *Database {
-	pool, err := pgxpool.New(context.Background(), "postgres://order_service:password@localhost/order_db")
+	url := os.Getenv("DB_URL")
+	if len(url) == 0 {
+		url = "localhost"
+	}
+	pool, err := pgxpool.New(context.Background(), "postgres://order_service:password@"+url+"/order_db")
 	if err != nil {
 		panic("Unable to connect to db")
 	}

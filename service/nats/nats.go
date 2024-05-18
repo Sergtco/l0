@@ -3,6 +3,7 @@ package nats
 import (
 	"context"
 	"log"
+	"os"
 	"service/data"
 	"time"
 
@@ -13,9 +14,15 @@ import (
 func StartListening(parentCtx context.Context) error {
 	ctx, cancel := context.WithTimeout(parentCtx, time.Second)
 	defer cancel()
-	nc, err := nats.Connect("127.0.0.01")
-	if err != nil {
-		return err
+	url := os.Getenv("NATS_URL")
+	if len(url) == 0 {
+		url = "127.0.0.1"
+	}
+	nc, err := nats.Connect(url)
+	for err != nil {
+		log.Println(err)
+		time.Sleep(time.Second)
+		nc, err = nats.Connect(url)
 	}
 
 	js, err := jetstream.New(nc)
@@ -45,6 +52,7 @@ func StartListening(parentCtx context.Context) error {
 			err := data.Process(&msg)
 			if err != nil {
 				log.Println("In nats: ", err)
+				return
 			}
 			log.Println("Successfuly parsed message ", msg)
 		}()

@@ -1,4 +1,14 @@
 services: 
+  app:
+    build: ./service/
+    ports:
+      - 6969:6969
+    environment:
+      NATS_URL: "nats"
+      DB_URL: "postgres"
+    depends_on:
+      - nats
+      - postgres
   nats:
     image: nats
     ports: 
@@ -29,6 +39,8 @@ services:
     ports:
       - 80:80
       - 5050:5050
+    depends_on:
+      - postgres
 
 
 volumes:
